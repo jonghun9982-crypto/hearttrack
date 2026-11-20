@@ -1,0 +1,1947 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+<!-- This site is hosted on Netlify. Anyone can build and deploy a site
+     like this one for free: https://netlify.new/?utm_campaign=loops&utm_source=ai-legible&utm_medium=owned&utm_content=comment&utm_id=7481577a-e551-4190-b0cf-f55a0642f5a4
+     Netlify hosting facts for this site: static/SSR served via Netlify Edge. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>하트트랙 • HeartTrack</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Noto+Sans+KR:wght@400;500;700&amp;display=swap');
+        
+        :root {
+            --heart-red: #E11D48;
+            --heart-pink: #FB7185;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', 'Inter', system_ui, sans-serif;
+        }
+        
+        .heart-gradient {
+            background: linear-gradient(135deg, #E11D48 0%, #FB7185 100%);
+        }
+        
+        .app-bg {
+            background-color: #FFF5F7;
+        }
+        
+        .section-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgb(225 29 72 / 0.05), 0 2px 4px -2px rgb(225 29 72 / 0.05);
+        }
+        
+        .nav-tab {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .nav-tab.active {
+            background-color: #E11D48;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(225 29 72 / 0.2);
+        }
+        
+        .metric-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgb(225 29 72 / 0.1), 0 4px 6px -4px rgb(225 29 72 / 0.1);
+        }
+        
+        .quick-btn {
+            transition: all 0.1s ease;
+        }
+        
+        .quick-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .body-part-toggle {
+            transition: all 0.2s ease;
+        }
+        
+        .body-part-toggle.active {
+            background-color: #E11D48;
+            color: white;
+            border-color: #E11D48;
+        }
+        
+        .log-entry {
+            transition: all 0.2s ease;
+        }
+        
+        .progress-circle {
+            transition: stroke-dashoffset 0.5s ease;
+        }
+        
+        .toast {
+            animation: toast-pop 0.3s ease forwards;
+        }
+        
+        .metric-value {
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .heart-icon {
+            animation: heartbeat 2s infinite ease-in-out;
+        }
+        
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .fitness-chart {
+            max-height: 220px;
+        }
+        
+        .health-shadow {
+            box-shadow: 0 10px 15px -3px rgb(225 29 72 / 0.08), 0 4px 6px -4px rgb(225 29 72 / 0.08);
+        }
+    </style>
+</head>
+<body class="app-bg text-slate-800">
+    <!-- Header -->
+    <header class="bg-white border-b border-rose-100 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center gap-x-3">
+                    <div class="w-10 h-10 heart-gradient rounded-2xl flex items-center justify-center shadow-lg">
+                        <i class="fa-solid fa-heart text-white text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight text-slate-900">하트트랙</h1>
+                        <p class="text-[10px] text-rose-500 -mt-1 font-medium">HeartTrack • 건강 관리</p>
+                    </div>
+                </div>
+                
+                <!-- Right side -->
+                <div class="flex items-center gap-x-4">
+                    <div class="hidden sm:flex items-center gap-x-2 bg-rose-50 px-3 py-1.5 rounded-2xl text-sm">
+                        <i class="fa-solid fa-calendar-day text-rose-500"></i>
+                        <span id="current-date" class="font-medium text-rose-700"></span>
+                    </div>
+                    
+                    <button onclick="openSettingsModal()" 
+                            class="w-9 h-9 flex items-center justify-center text-rose-500 hover:bg-rose-100 rounded-2xl transition-colors">
+                        <i class="fa-solid fa-cog text-lg"></i>
+                    </button>
+                    
+                    <div class="w-9 h-9 bg-rose-100 rounded-2xl flex items-center justify-center overflow-hidden ring-2 ring-rose-200">
+                        <i class="fa-solid fa-user text-rose-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <div class="flex items-center gap-x-1 bg-white p-1 rounded-3xl shadow-sm border border-rose-100 w-fit mx-auto sm:mx-0 overflow-x-auto">
+            <button onclick="switchTab('dashboard')" id="tab-dashboard"
+                    class="nav-tab active flex items-center gap-x-2 px-5 py-2 text-sm font-semibold rounded-3xl">
+                <i class="fa-solid fa-chart-line"></i>
+                <span class="hidden sm:inline">대시보드</span>
+            </button>
+            <button onclick="switchTab('water')" id="tab-water"
+                    class="nav-tab flex items-center gap-x-2 px-5 py-2 text-sm font-semibold rounded-3xl hover:bg-rose-50">
+                <i class="fa-solid fa-tint"></i>
+                <span class="hidden sm:inline">물 섭취</span>
+            </button>
+            <button onclick="switchTab('running')" id="tab-running"
+                    class="nav-tab flex items-center gap-x-2 px-5 py-2 text-sm font-semibold rounded-3xl hover:bg-rose-50">
+                <i class="fa-solid fa-running"></i>
+                <span class="hidden sm:inline">러닝</span>
+            </button>
+            <button onclick="switchTab('strength')" id="tab-strength"
+                    class="nav-tab flex items-center gap-x-2 px-5 py-2 text-sm font-semibold rounded-3xl hover:bg-rose-50">
+                <i class="fa-solid fa-dumbbell"></i>
+                <span class="hidden sm:inline">근력 운동</span>
+            </button>
+            <button onclick="switchTab('time')" id="tab-time"
+                    class="nav-tab flex items-center gap-x-2 px-5 py-2 text-sm font-semibold rounded-3xl hover:bg-rose-50">
+                <i class="fa-solid fa-clock"></i>
+                <span class="hidden sm:inline">운동 시간</span>
+            </button>
+            <button onclick="switchTab('history')" id="tab-history"
+                    class="nav-tab flex items-center gap-x-2 px-5 py-2 text-sm font-semibold rounded-3xl hover:bg-rose-50">
+                <i class="fa-solid fa-history"></i>
+                <span class="hidden sm:inline">내역 및 분석</span>
+            </button>
+        </div>
+    </div>
+    
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- DASHBOARD TAB -->
+        <div id="content-dashboard" class="tab-content active">
+            <div class="mb-6">
+                <h2 class="text-3xl font-bold tracking-tight">오늘의 건강 요약</h2>
+                <p class="text-slate-500 mt-1">2026년 7월 2일 • 좋은 하루 되세요</p>
+            </div>
+            
+            <!-- Metrics Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                
+                <!-- Water Card -->
+                <div class="metric-card section-card p-5 border border-rose-100">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div class="flex items-center gap-x-2">
+                                <i class="fa-solid fa-tint text-rose-500 text-xl"></i>
+                                <span class="font-semibold text-lg">물 섭취</span>
+                            </div>
+                            <div class="mt-3">
+                                <span id="dash-water-value" class="text-4xl font-bold tracking-tighter">1.24</span>
+                                <span class="text-slate-400 text-lg">/ 2.0 L</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-rose-500 font-medium">62%</div>
+                            <div class="w-9 h-9 mt-1">
+                                <svg class="w-9 h-9" viewBox="0 0 36 36">
+                                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                                          fill="none" stroke="#FECDD3" stroke-width="3"/>
+                                    <path id="dash-water-progress" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                                          fill="none" stroke="#E11D48" stroke-width="3" stroke-dasharray="100, 100"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="quickAddWater(20); switchTab('water')" 
+                                class="flex-1 text-xs py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl font-medium transition-colors">+1모금</button>
+                        <button onclick="quickAddWater(100); switchTab('water')" 
+                                class="flex-1 text-xs py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl font-medium transition-colors">+5모금</button>
+                    </div>
+                </div>
+                
+                <!-- Running Card -->
+                <div class="metric-card section-card p-5 border border-rose-100">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div class="flex items-center gap-x-2">
+                                <i class="fa-solid fa-running text-rose-500 text-xl"></i>
+                                <span class="font-semibold text-lg">러닝</span>
+                            </div>
+                            <div class="mt-3">
+                                <span id="dash-running-value" class="text-4xl font-bold tracking-tighter">2.5</span>
+                                <span class="text-slate-400 text-lg">km</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div id="dash-running-percent" class="text-xs text-rose-500 font-medium">50%</div>
+                            <div id="dash-running-goal-text" class="text-[10px] text-slate-400">목표 5km</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="quickAddRunning(500); switchTab('running')" 
+                                class="flex-1 text-xs py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl font-medium transition-colors">+500m</button>
+                        <button onclick="quickAddRunning(3000); switchTab('running')" 
+                                class="flex-1 text-xs py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl font-medium transition-colors">+3km</button>
+                    </div>
+                </div>
+                
+                <!-- Strength Card -->
+                <div class="metric-card section-card p-5 border border-rose-100">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div class="flex items-center gap-x-2">
+                                <i class="fa-solid fa-dumbbell text-rose-500 text-xl"></i>
+                                <span class="font-semibold text-lg">근력 운동</span>
+                            </div>
+                            <div class="mt-3">
+                                <span id="dash-strength-volume" class="text-4xl font-bold tracking-tighter">680</span>
+                                <span class="text-slate-400 text-lg">kg</span>
+                            </div>
+                            <div class="text-xs text-slate-500 mt-0.5"><span id="dash-strength-sets">4</span>세트</div>
+                        </div>
+                    </div>
+                    <button onclick="switchTab('strength')" 
+                            class="w-full text-xs py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-semibold transition-colors">
+                        기록 추가하기
+                    </button>
+                </div>
+                
+                <!-- Time Card -->
+                <div class="metric-card section-card p-5 border border-rose-100">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div class="flex items-center gap-x-2">
+                                <i class="fa-solid fa-clock text-rose-500 text-xl"></i>
+                                <span class="font-semibold text-lg">운동 시간</span>
+                            </div>
+                            <div class="mt-3 flex items-baseline gap-x-3">
+                                <div>
+                                    <span id="dash-exercise-time" class="text-4xl font-bold tracking-tighter">42</span>
+                                    <span class="text-slate-400 text-sm">분</span>
+                                </div>
+                                <div class="text-xs text-slate-400">/ 휴게 <span id="dash-rest-time">18</span>분</div>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="switchTab('time')" 
+                            class="w-full text-xs py-2 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-2xl font-semibold transition-colors">
+                        타이머 사용하기
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="section-card p-5 border border-rose-100">
+                <h3 class="font-semibold mb-3 flex items-center gap-x-2">
+                    <i class="fa-solid fa-bolt text-rose-500"></i> 
+                    빠른 기록
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <button onclick="quickAddWater(20)" class="quick-btn flex items-center justify-center gap-x-2 py-3 bg-white border border-rose-200 hover:border-rose-300 rounded-2xl text-sm font-medium">
+                        <i class="fa-solid fa-tint text-rose-400"></i> <span>1모금 (20ml)</span>
+                    </button>
+                    <button onclick="quickAddRunning(100)" class="quick-btn flex items-center justify-center gap-x-2 py-3 bg-white border border-rose-200 hover:border-rose-300 rounded-2xl text-sm font-medium">
+                        <i class="fa-solid fa-running text-rose-400"></i> <span>100m</span>
+                    </button>
+                    <button onclick="switchTab('strength')" class="quick-btn flex items-center justify-center gap-x-2 py-3 bg-white border border-rose-200 hover:border-rose-300 rounded-2xl text-sm font-medium">
+                        <i class="fa-solid fa-dumbbell text-rose-400"></i> <span>근력 세트 추가</span>
+                    </button>
+                    <button onclick="switchTab('time')" class="quick-btn flex items-center justify-center gap-x-2 py-3 bg-white border border-rose-200 hover:border-rose-300 rounded-2xl text-sm font-medium">
+                        <i class="fa-solid fa-clock text-rose-400"></i> <span>시간 기록</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- WATER TAB -->
+        <div id="content-water" class="tab-content">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-3xl font-bold tracking-tight">물 섭취 추적</h2>
+                    <p class="text-slate-500">하루 권장 섭취량 2L 목표</p>
+                </div>
+                <button onclick="resetDailyData('water')" class="text-xs px-4 py-2 text-rose-500 hover:bg-rose-50 rounded-2xl flex items-center gap-x-1">
+                    <i class="fa-solid fa-redo"></i> <span>오늘 초기화</span>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                <!-- Current Status -->
+                <div class="lg:col-span-2 section-card p-6 border border-rose-100">
+                    <div class="text-center">
+                        <div class="mx-auto w-36 h-36 relative mb-4">
+                            <svg class="w-36 h-36 -rotate-90" viewBox="0 0 120 120">
+                                <circle cx="60" cy="60" r="54" fill="none" stroke="#FECDD3" stroke-width="10"/>
+                                <circle id="water-progress-circle" cx="60" cy="60" r="54" fill="none" 
+                                        stroke="#E11D48" stroke-width="10" stroke-dasharray="339.292" stroke-dashoffset="0"/>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <div id="water-total" class="text-5xl font-bold tracking-tighter text-rose-600">1240</div>
+                                <div class="text-sm text-slate-500 -mt-1">ml</div>
+                                <div id="water-percent" class="mt-1 text-xs font-semibold text-rose-500">62%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-sm text-slate-500">목표까지 <span id="water-remaining" class="font-semibold text-rose-600">760ml</span> 남음</div>
+                    </div>
+                    
+                    <!-- Quick Add Buttons -->
+                    <div class="mt-6">
+                        <p class="text-xs font-semibold text-slate-500 mb-2 text-center">빠른 추가</p>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button onclick="addWater(20)" class="quick-btn py-3 px-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl text-sm font-semibold flex flex-col items-center">
+                                <span class="font-bold">1모금</span>
+                                <span class="text-[10px] opacity-70">+20ml</span>
+                            </button>
+                            <button onclick="addWater(60)" class="quick-btn py-3 px-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl text-sm font-semibold flex flex-col items-center">
+                                <span class="font-bold">3모금</span>
+                                <span class="text-[10px] opacity-70">+60ml</span>
+                            </button>
+                            <button onclick="addWater(100)" class="quick-btn py-3 px-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl text-sm font-semibold flex flex-col items-center">
+                                <span class="font-bold">5모금</span>
+                                <span class="text-[10px] opacity-70">+100ml</span>
+                            </button>
+                            <button onclick="addWater(200)" class="quick-btn py-3 px-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl text-sm font-semibold flex flex-col items-center">
+                                <span class="font-bold">10모금</span>
+                                <span class="text-[10px] opacity-70">+200ml</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Manual Input + Chart -->
+                <div class="lg:col-span-3 section-card p-6 border border-rose-100">
+                    <h4 class="font-semibold mb-3">수기 기록</h4>
+                    <div class="flex gap-3">
+                        <div class="flex-1">
+                            <label class="text-xs text-slate-500 block mb-1">추가할 양 (ml)</label>
+                            <input id="water-manual-input" type="number" value="200" class="w-full border border-rose-200 focus:border-rose-400 rounded-2xl px-4 py-2.5 text-lg font-medium outline-none">
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="addWaterFromInput()" class="px-6 py-2.5 bg-rose-500 hover:bg-rose-600 active:bg-rose-700 transition-colors text-white font-semibold rounded-2xl">추가</button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <h4 class="font-semibold mb-3 text-sm">최근 7일 추이</h4>
+                        <div class="h-[160px]">
+                            <canvas id="water-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- RUNNING TAB -->
+        <div id="content-running" class="tab-content">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-3xl font-bold tracking-tight">러닝 추적</h2>
+                    <p class="text-slate-500">오늘 달린 거리 기록 및 시각화</p>
+                </div>
+                <button onclick="resetDailyData('running')" class="text-xs px-4 py-2 text-rose-500 hover:bg-rose-50 rounded-2xl flex items-center gap-x-1">
+                    <i class="fa-solid fa-redo"></i> <span>오늘 초기화</span>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                <div class="lg:col-span-2 section-card p-6 border border-rose-100">
+                    <div class="text-center">
+                        <div class="mx-auto mb-4">
+                            <i class="fa-solid fa-running text-[72px] text-rose-300"></i>
+                        </div>
+                        <div>
+                            <span id="running-total" class="text-6xl font-bold tracking-tighter text-rose-600">2.5</span>
+                            <span class="text-2xl text-slate-400">km</span>
+                        </div>
+                        <div class="mt-1 text-sm text-slate-500">오늘 누적 거리</div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <p class="text-xs font-semibold text-slate-500 mb-2 text-center">빠른 추가</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="addRunning(100)" class="quick-btn py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl text-sm font-semibold">+100m</button>
+                            <button onclick="addRunning(500)" class="quick-btn py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl text-sm font-semibold">+500m</button>
+                            <button onclick="addRunning(1000)" class="quick-btn py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl text-sm font-semibold">+1km</button>
+                            <button onclick="addRunning(3000)" class="quick-btn py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl text-sm font-semibold">+3km</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="lg:col-span-3 section-card p-6 border border-rose-100">
+                    <h4 class="font-semibold mb-3">수기 기록 (km)</h4>
+                    <div class="flex gap-3">
+                        <div class="flex-1">
+                            <input id="running-manual-input" type="number" step="0.1" value="1.5" class="w-full border border-rose-200 focus:border-rose-400 rounded-2xl px-4 py-2.5 text-lg font-medium outline-none">
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="addRunningFromInput()" class="px-6 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-semibold rounded-2xl">추가</button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <h4 class="font-semibold mb-3 text-sm">최근 7일 러닝 거리</h4>
+                        <div class="h-[160px]">
+                            <canvas id="running-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- STRENGTH TAB -->
+        <div id="content-strength" class="tab-content">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-3xl font-bold tracking-tight">근력 운동 기록</h2>
+                    <p class="text-slate-500">부위별 세트 기록 및 무게 총합 계산</p>
+                </div>
+                <button onclick="resetDailyData('strength')" class="text-xs px-4 py-2 text-rose-500 hover:bg-rose-50 rounded-2xl flex items-center gap-x-1">
+                    <i class="fa-solid fa-redo"></i> <span>오늘 초기화</span>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Logging Form -->
+                <div class="lg:col-span-5 section-card p-6 border border-rose-100">
+                    <h3 class="font-semibold mb-4 flex items-center gap-x-2">
+                        <i class="fa-solid fa-plus-circle text-rose-500"></i> 새 세트 기록
+                    </h3>
+                    
+                    <!-- Body Parts -->
+                    <div class="mb-5">
+                        <label class="block text-sm font-semibold text-slate-600 mb-2">운동 부위 (다중 선택)</label>
+                        <div class="flex flex-wrap gap-2" id="body-parts-container">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                    
+                    <!-- Reps -->
+                    <div class="mb-5">
+                        <label class="block text-sm font-semibold text-slate-600 mb-2">반복 횟수</label>
+                        <div class="grid grid-cols-4 gap-2" id="reps-buttons">
+                            <button data-reps="5" class="reps-btn quick-btn py-2.5 text-sm font-semibold border border-rose-200 hover:bg-rose-50 rounded-2xl">5회</button>
+                            <button data-reps="10" class="reps-btn quick-btn py-2.5 text-sm font-semibold border border-rose-200 hover:bg-rose-50 rounded-2xl active">10회</button>
+                            <button data-reps="20" class="reps-btn quick-btn py-2.5 text-sm font-semibold border border-rose-200 hover:bg-rose-50 rounded-2xl">20회</button>
+                            <button data-reps="30" class="reps-btn quick-btn py-2.5 text-sm font-semibold border border-rose-200 hover:bg-rose-50 rounded-2xl">30회</button>
+                        </div>
+                        <div class="mt-2">
+                            <input id="reps-custom" type="number" placeholder="직접 입력" class="w-full text-sm border border-rose-200 rounded-2xl px-3 py-1.5">
+                        </div>
+                    </div>
+                    
+                    <!-- Weight -->
+                    <div class="mb-5">
+                        <label class="block text-sm font-semibold text-slate-600 mb-2">무게 (kg)</label>
+                        <div class="grid grid-cols-4 gap-2" id="weight-buttons">
+                            <button data-weight="1" class="weight-btn quick-btn py-2.5 text-sm font-semibold border border-rose-200 hover:bg-rose-50 rounded-2xl">1kg</button>
+                            <button data-weight="3" class="weight-btn quick-btn py-2.5 text-sm font-semibold border border-rose-200 hover:bg-rose-50 rounded-2xl">3kg</button>
+                            <button data-weight="5" class="weight-btn quick-btn py-2.5 text-sm font-semibold border border-rose-200 hover:bg-rose-50 rounded-2xl active">5kg</button>
+                            <button data-weight="10" class="weight-btn quick-btn py-2.5 text-sm font-semibold border border-rose-200 hover:bg-rose-50 rounded-2xl">10kg</button>
+                        </div>
+                        <div class="mt-2">
+                            <input id="weight-custom" type="number" step="0.5" placeholder="직접 입력 (kg)" class="w-full text-sm border border-rose-200 rounded-2xl px-3 py-1.5">
+                        </div>
+                    </div>
+                    
+                    <!-- Calculated Volume -->
+                    <div class="bg-rose-50 rounded-2xl p-4 mb-5">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-rose-600">예상 볼륨</span>
+                            <span id="calculated-volume" class="text-3xl font-bold text-rose-600 tracking-tighter">50</span>
+                            <span class="text-sm text-rose-500">kg</span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="addStrengthLog()" 
+                            class="w-full py-3.5 bg-rose-500 hover:bg-rose-600 active:bg-rose-700 transition-all text-white font-bold rounded-2xl flex items-center justify-center gap-x-2">
+                        <i class="fa-solid fa-check"></i> 
+                        <span>세트 기록 추가</span>
+                    </button>
+                </div>
+                
+                <!-- Today's Logs -->
+                <div class="lg:col-span-7 section-card p-6 border border-rose-100 flex flex-col">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold">오늘의 근력 운동 기록</h3>
+                        <div class="text-right">
+                            <div class="text-xs text-slate-500">총 볼륨</div>
+                            <div><span id="strength-total-volume" class="text-2xl font-bold text-rose-600">680</span> <span class="text-sm text-slate-500">kg</span></div>
+                        </div>
+                    </div>
+                    
+                    <div id="strength-logs-list" class="flex-1 overflow-auto space-y-2 text-sm pr-1 custom-scroll">
+                        <!-- Populated dynamically by JS -->
+                    </div>
+                    
+                    <div class="pt-3 mt-auto border-t text-xs text-slate-500 flex justify-between">
+                        <div>총 <span id="strength-total-sets">4</span> 세트</div>
+                        <div onclick="clearStrengthLogs()" class="cursor-pointer hover:text-rose-500 transition-colors">전체 삭제</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- TIME TAB -->
+        <div id="content-time" class="tab-content">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-3xl font-bold tracking-tight">운동 및 휴게 시간</h2>
+                    <p class="text-slate-500">타이머 또는 수기 기록으로 추적</p>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                
+                <!-- Exercise Timer -->
+                <div class="section-card p-6 border border-rose-100">
+                    <div class="flex items-center gap-x-3 mb-4">
+                        <div class="w-10 h-10 bg-emerald-100 rounded-2xl flex items-center justify-center">
+                            <i class="fa-solid fa-play text-emerald-500"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold">운동 시간 타이머</div>
+                            <div class="text-xs text-slate-500">운동 중 시간을 측정하세요</div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center my-6">
+                        <div id="exercise-timer-display" class="font-mono text-6xl font-bold tracking-tighter text-emerald-600">00:00</div>
+                        <div class="text-xs text-emerald-500 mt-1">경과 시간</div>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="toggleExerciseTimer()" id="exercise-timer-btn"
+                                class="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-2xl flex items-center justify-center gap-x-2">
+                            <i class="fa-solid fa-play"></i> <span id="exercise-timer-text">시작</span>
+                        </button>
+                        <button onclick="resetExerciseTimer()" class="px-5 py-2.5 border border-emerald-200 text-emerald-600 rounded-2xl hover:bg-emerald-50">리셋</button>
+                        <button onclick="addExerciseTimeFromTimer()" class="px-5 py-2.5 bg-emerald-100 text-emerald-700 font-semibold rounded-2xl hover:bg-emerald-200">기록 추가</button>
+                    </div>
+                </div>
+                
+                <!-- Rest Timer -->
+                <div class="section-card p-6 border border-rose-100">
+                    <div class="flex items-center gap-x-3 mb-4">
+                        <div class="w-10 h-10 bg-amber-100 rounded-2xl flex items-center justify-center">
+                            <i class="fa-solid fa-pause text-amber-500"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold">휴게 시간 타이머</div>
+                            <div class="text-xs text-slate-500">세트 간 휴식 시간을 측정하세요</div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center my-6">
+                        <div id="rest-timer-display" class="font-mono text-6xl font-bold tracking-tighter text-amber-600">00:00</div>
+                        <div class="text-xs text-amber-500 mt-1">경과 시간</div>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="toggleRestTimer()" id="rest-timer-btn"
+                                class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-2xl flex items-center justify-center gap-x-2">
+                            <i class="fa-solid fa-play"></i> <span id="rest-timer-text">시작</span>
+                        </button>
+                        <button onclick="resetRestTimer()" class="px-5 py-2.5 border border-amber-200 text-amber-600 rounded-2xl hover:bg-amber-50">리셋</button>
+                        <button onclick="addRestTimeFromTimer()" class="px-5 py-2.5 bg-amber-100 text-amber-700 font-semibold rounded-2xl hover:bg-amber-200">기록 추가</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Manual Time Input -->
+            <div class="section-card p-6 border border-rose-100">
+                <h3 class="font-semibold mb-4">수기 시간 기록</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="text-sm text-slate-500 block mb-1.5">운동 시간 (분)</label>
+                        <div class="flex gap-2">
+                            <input id="manual-exercise-min" type="number" value="30" class="flex-1 border border-rose-200 rounded-2xl px-4 py-2 outline-none">
+                            <button onclick="addManualTime('exercise')" class="px-5 bg-emerald-500 text-white rounded-2xl font-semibold">추가</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-sm text-slate-500 block mb-1.5">휴게 시간 (분)</label>
+                        <div class="flex gap-2">
+                            <input id="manual-rest-min" type="number" value="10" class="flex-1 border border-rose-200 rounded-2xl px-4 py-2 outline-none">
+                            <button onclick="addManualTime('rest')" class="px-5 bg-amber-500 text-white rounded-2xl font-semibold">추가</button>
+                        </div>
+                    </div>
+                    <div class="flex items-end">
+                        <div class="bg-rose-50 rounded-2xl p-3 text-sm w-full">
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">오늘 총 운동</span> 
+                                <span id="time-total-exercise" class="font-bold text-emerald-600">42분</span>
+                            </div>
+                            <div class="flex justify-between mt-1">
+                                <span class="text-slate-600">오늘 총 휴게</span> 
+                                <span id="time-total-rest" class="font-bold text-amber-600">18분</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Time Visualization -->
+            <div class="mt-6 section-card p-6 border border-rose-100">
+                <h3 class="font-semibold mb-4">최근 7일 운동 / 휴게 시간 추이</h3>
+                <div class="h-[200px]">
+                    <canvas id="time-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- HISTORY / ANALYTICS TAB -->
+        <div id="content-history" class="tab-content">
+            <div class="mb-6">
+                <h2 class="text-3xl font-bold tracking-tight">기록 내역 및 분석</h2>
+                <p class="text-slate-500">지난 데이터 시각화 및 요약</p>
+            </div>
+            
+            <div class="section-card p-6 border border-rose-100 mb-6">
+                <div class="flex flex-wrap items-center justify-between gap-y-3 mb-4">
+                    <h3 class="font-semibold">최근 7일 요약</h3>
+                    <button onclick="refreshAllCharts()" class="text-xs flex items-center gap-x-1.5 px-4 py-1.5 bg-white border border-rose-200 hover:bg-rose-50 rounded-2xl text-rose-600">
+                        <i class="fa-solid fa-sync-alt"></i> <span>차트 새로고침</span>
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div class="bg-white border border-rose-100 rounded-2xl p-4">
+                        <div class="text-xs text-slate-500">평균 물 섭취</div>
+                        <div class="mt-1"><span id="avg-water" class="text-2xl font-bold">1.6</span> <span class="text-sm">L</span></div>
+                    </div>
+                    <div class="bg-white border border-rose-100 rounded-2xl p-4">
+                        <div class="text-xs text-slate-500">총 러닝 거리</div>
+                        <div class="mt-1"><span id="total-running" class="text-2xl font-bold">12.8</span> <span class="text-sm">km</span></div>
+                    </div>
+                    <div class="bg-white border border-rose-100 rounded-2xl p-4">
+                        <div class="text-xs text-slate-500">총 근력 볼륨</div>
+                        <div class="mt-1"><span id="total-strength-volume" class="text-2xl font-bold">3,450</span> <span class="text-sm">kg</span></div>
+                    </div>
+                    <div class="bg-white border border-rose-100 rounded-2xl p-4">
+                        <div class="text-xs text-slate-500">총 운동 시간</div>
+                        <div class="mt-1"><span id="total-exercise-time" class="text-2xl font-bold">185</span> <span class="text-sm">분</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="section-card p-5 border border-rose-100">
+                    <h4 class="font-semibold mb-3 text-sm">물 섭취 추이 (ml)</h4>
+                    <div class="h-[190px]"><canvas id="history-water-chart"></canvas></div>
+                </div>
+                <div class="section-card p-5 border border-rose-100">
+                    <h4 class="font-semibold mb-3 text-sm">러닝 거리 (km)</h4>
+                    <div class="h-[190px]"><canvas id="history-running-chart"></canvas></div>
+                </div>
+                <div class="section-card p-5 border border-rose-100">
+                    <h4 class="font-semibold mb-3 text-sm">근력 운동 볼륨 (kg)</h4>
+                    <div class="h-[190px]"><canvas id="history-strength-chart"></canvas></div>
+                </div>
+                <div class="section-card p-5 border border-rose-100">
+                    <h4 class="font-semibold mb-3 text-sm">운동 vs 휴게 시간 (분)</h4>
+                    <div class="h-[190px]"><canvas id="history-time-chart"></canvas></div>
+                </div>
+            </div>
+        </div>
+        
+    </main>
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-[100]"></div>
+    
+    <!-- Settings Modal -->
+    <div id="settings-modal" onclick="if (event.target.id === 'settings-modal') closeSettingsModal()" class="hidden fixed inset-0 bg-black/40 z-[200] flex items-center justify-center">
+        <div onclick="event.stopImmediatePropagation()" class="bg-white w-full max-w-md mx-4 rounded-3xl overflow-hidden shadow-2xl">
+            <div class="px-6 py-5 border-b flex items-center justify-between">
+                <h3 class="font-bold text-xl">설정</h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <div>
+                    <label class="text-sm font-semibold block mb-1.5">물 섭취 목표 (ml)</label>
+                    <input id="goal-water" type="number" value="2000" class="w-full border border-rose-200 rounded-2xl px-4 py-2.5">
+                </div>
+                <div>
+                    <label class="text-sm font-semibold block mb-1.5">일일 러닝 목표 (km)</label>
+                    <input id="goal-running" type="number" step="0.1" value="5" class="w-full border border-rose-200 rounded-2xl px-4 py-2.5">
+                </div>
+                
+                <div class="pt-2 border-t">
+                    <button onclick="exportData()" class="w-full flex items-center justify-center gap-x-2 py-3 text-sm font-semibold border border-rose-200 hover:bg-rose-50 rounded-2xl mb-2">
+                        <i class="fa-solid fa-download"></i> <span>데이터 내보내기 (JSON)</span>
+                    </button>
+                    <button onclick="importData()" class="w-full flex items-center justify-center gap-x-2 py-3 text-sm font-semibold border border-rose-200 hover:bg-rose-50 rounded-2xl mb-2">
+                        <i class="fa-solid fa-upload"></i> <span>데이터 불러오기 (JSON)</span>
+                    </button>
+                    <button onclick="clearAllData()" class="w-full flex items-center justify-center gap-x-2 py-3 text-sm font-semibold text-red-500 hover:bg-red-50 border border-red-100 rounded-2xl">
+                        <i class="fa-solid fa-trash"></i> <span>모든 데이터 삭제</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="px-6 py-4 bg-slate-50 flex justify-end">
+                <button onclick="saveSettings(); closeSettingsModal()" class="px-6 py-2 bg-rose-500 text-white font-semibold rounded-2xl">저장</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Tailwind script
+        function initializeTailwind() {
+            document.documentElement.style.setProperty('--accent', '#E11D48');
+            
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        fontFamily: {
+                            'sans': ['Noto Sans KR', 'Inter', 'system-ui', 'sans-serif']
+                        }
+                    }
+                }
+            };
+        }
+        
+        // Data Management
+        let healthData = {};
+        let currentDate = '';
+        
+        function getToday() {
+            const today = new Date();
+            return today.toLocaleDateString('sv-SE'); // YYYY-MM-DD
+        }
+        
+        function loadData() {
+            const saved = localStorage.getItem('hearttrack_data');
+            if (saved) {
+                healthData = JSON.parse(saved);
+            } else {
+                // Initialize with sample data for demo
+                healthData = generateSampleData();
+                saveData();
+            }
+            currentDate = getToday();
+        }
+        
+        function saveData() {
+            localStorage.setItem('hearttrack_data', JSON.stringify(healthData));
+        }
+        
+        function generateSampleData() {
+            const sample = {};
+            const today = new Date();
+            
+            // Today
+            const todayStr = today.toLocaleDateString('sv-SE');
+            sample[todayStr] = {
+                water_ml: 1240,
+                running_m: 2500,
+                strength: [
+                    { id: Date.now() - 3600000, time: "08:45", parts: ["상체", "복근"], reps: 10, weight: 5, volume: 50 },
+                    { id: Date.now() - 1800000, time: "09:20", parts: ["하체"], reps: 20, weight: 10, volume: 200 },
+                    { id: Date.now() - 900000, time: "10:05", parts: ["등", "허리"], reps: 12, weight: 8, volume: 96 },
+                    { id: Date.now() - 300000, time: "11:30", parts: ["관절 주변"], reps: 15, weight: 3, volume: 45 }
+                ],
+                exercise_min: 42,
+                rest_min: 18
+            };
+            
+            // Yesterday
+            const yest = new Date(today);
+            yest.setDate(yest.getDate() - 1);
+            const yestStr = yest.toLocaleDateString('sv-SE');
+            sample[yestStr] = {
+                water_ml: 1850,
+                running_m: 4200,
+                strength: [
+                    { id: Date.now() - 86400000, time: "07:30", parts: ["상체"], reps: 15, weight: 6, volume: 90 },
+                    { id: Date.now() - 86400000 + 3600000, time: "08:15", parts: ["하체", "복근"], reps: 12, weight: 12, volume: 144 }
+                ],
+                exercise_min: 55,
+                rest_min: 22
+            };
+            
+            // 2 days ago
+            const day2 = new Date(today);
+            day2.setDate(day2.getDate() - 2);
+            const day2Str = day2.toLocaleDateString('sv-SE');
+            sample[day2Str] = {
+                water_ml: 2100,
+                running_m: 1800,
+                strength: [
+                    { id: Date.now() - 172800000, time: "19:00", parts: ["등", "허리"], reps: 10, weight: 7, volume: 70 }
+                ],
+                exercise_min: 30,
+                rest_min: 12
+            };
+            
+            return sample;
+        }
+        
+        function getDayData(dateStr) {
+            if (!healthData[dateStr]) {
+                healthData[dateStr] = {
+                    water_ml: 0,
+                    running_m: 0,
+                    strength: [],
+                    exercise_min: 0,
+                    rest_min: 0
+                };
+            }
+            return healthData[dateStr];
+        }
+        
+        // Update Dashboard
+        function updateDashboard() {
+            const todayData = getDayData(currentDate);
+            const goalWater = parseInt(localStorage.getItem('goal_water') || '2000');
+            
+            // Water
+            const waterL = (todayData.water_ml / 1000).toFixed(2);
+            document.getElementById('dash-water-value').textContent = waterL;
+            
+            const waterPct = Math.min(Math.round((todayData.water_ml / goalWater) * 100), 100);
+            const progressCircle = document.getElementById('dash-water-progress');
+            if (progressCircle) {
+                progressCircle.setAttribute('stroke-dasharray', `${waterPct}, 100`);
+            }
+            
+            // Running
+            const runningKm = (todayData.running_m / 1000).toFixed(1);
+            document.getElementById('dash-running-value').textContent = runningKm;
+            
+            const goalRunning = parseFloat(localStorage.getItem('goal_running') || '5');
+            const runningPct = goalRunning > 0 ? Math.min(Math.round((parseFloat(runningKm) / goalRunning) * 100), 100) : 0;
+            
+            const runningPctEl = document.getElementById('dash-running-percent');
+            if (runningPctEl) runningPctEl.textContent = `${runningPct}%`;
+            
+            const runningGoalEl = document.getElementById('dash-running-goal-text');
+            if (runningGoalEl) runningGoalEl.textContent = `목표 ${goalRunning}km`;
+            
+            // Strength
+            let totalVolume = 0;
+            let totalSets = todayData.strength.length;
+            todayData.strength.forEach(log => {
+                totalVolume += log.volume || (log.reps * log.weight);
+            });
+            
+            document.getElementById('dash-strength-volume').textContent = totalVolume;
+            document.getElementById('dash-strength-sets').textContent = totalSets;
+            
+            // Time
+            document.getElementById('dash-exercise-time').textContent = todayData.exercise_min || 0;
+            document.getElementById('dash-rest-time').textContent = todayData.rest_min || 0;
+        }
+        
+        // Water Functions
+        let waterChartInstance = null;
+        
+        function addWater(ml) {
+            const dayData = getDayData(currentDate);
+            dayData.water_ml = (dayData.water_ml || 0) + ml;
+            saveData();
+            
+            updateWaterUI();
+            updateDashboard();
+            showToast(`${ml}ml 추가되었습니다`, 'success');
+            refreshAllCharts();
+        }
+        
+        function addWaterFromInput() {
+            const input = document.getElementById('water-manual-input');
+            const ml = parseInt(input.value);
+            if (ml > 0) {
+                addWater(ml);
+                input.value = '200';
+            }
+        }
+        
+        function quickAddWater(ml) {
+            addWater(ml);
+        }
+        
+        function quickAddRunning(meters) {
+            addRunning(meters);
+        }
+        
+        function updateWaterUI() {
+            const dayData = getDayData(currentDate);
+            const goal = parseInt(localStorage.getItem('goal_water') || '2000');
+            
+            const totalEl = document.getElementById('water-total');
+            if (totalEl) totalEl.textContent = dayData.water_ml || 0;
+            
+            const pct = Math.min(Math.round(((dayData.water_ml || 0) / goal) * 100), 100);
+            const pctEl = document.getElementById('water-percent');
+            if (pctEl) pctEl.textContent = `${pct}%`;
+            
+            const remainingEl = document.getElementById('water-remaining');
+            if (remainingEl) remainingEl.textContent = `${Math.max(0, goal - (dayData.water_ml || 0))}ml`;
+            
+            // Progress circle
+            const circle = document.getElementById('water-progress-circle');
+            if (circle) {
+                const circumference = 339.292;
+                const offset = circumference - (pct / 100 * circumference);
+                circle.setAttribute('stroke-dashoffset', offset);
+            }
+            
+            // Update chart
+            updateWaterChart();
+        }
+        
+        function updateWaterChart() {
+            const ctx = document.getElementById('water-chart');
+            if (!ctx) return;
+            
+            const last7Days = getLast7Days();
+            const labels = last7Days.map(d => d.label);
+            const values = last7Days.map(d => {
+                const day = healthData[d.date] || { water_ml: 0 };
+                return day.water_ml || 0;
+            });
+            
+            if (waterChartInstance) waterChartInstance.destroy();
+            
+            waterChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '물 섭취 (ml)',
+                        data: values,
+                        borderColor: '#E11D48',
+                        backgroundColor: 'rgba(225, 29, 72, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.35,
+                        fill: true,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#E11D48',
+                        pointBorderWidth: 2,
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#FECDD3' }, ticks: { color: '#64748b', font: { size: 10 } } },
+                        x: { grid: { color: '#FECDD3' }, ticks: { color: '#64748b', font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+        
+        // Running Functions
+        let runningChartInstance = null;
+        
+        function addRunning(meters) {
+            const dayData = getDayData(currentDate);
+            dayData.running_m = (dayData.running_m || 0) + meters;
+            saveData();
+            
+            updateRunningUI();
+            updateDashboard();
+            showToast(`${(meters/1000).toFixed(1)}km 추가되었습니다`, 'success');
+            refreshAllCharts();
+        }
+        
+        function addRunningFromInput() {
+            const input = document.getElementById('running-manual-input');
+            const km = parseFloat(input.value);
+            if (km > 0) {
+                addRunning(Math.round(km * 1000));
+                input.value = '1.0';
+            }
+        }
+        
+        function updateRunningUI() {
+            const dayData = getDayData(currentDate);
+            const totalKm = ((dayData.running_m || 0) / 1000).toFixed(1);
+            
+            const totalEl = document.getElementById('running-total');
+            if (totalEl) totalEl.textContent = totalKm;
+            
+            updateRunningChart();
+        }
+        
+        function updateRunningChart() {
+            const ctx = document.getElementById('running-chart');
+            if (!ctx) return;
+            
+            const last7Days = getLast7Days();
+            const labels = last7Days.map(d => d.label);
+            const values = last7Days.map(d => {
+                const day = healthData[d.date] || { running_m: 0 };
+                return ((day.running_m || 0) / 1000);
+            });
+            
+            if (runningChartInstance) runningChartInstance.destroy();
+            
+            runningChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '러닝 (km)',
+                        data: values,
+                        backgroundColor: '#FB7185',
+                        borderColor: '#E11D48',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#FECDD3' }, ticks: { color: '#64748b', font: { size: 10 } } },
+                        x: { grid: { color: '#FECDD3' }, ticks: { color: '#64748b', font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+        
+        // Strength Functions
+        let selectedBodyParts = [];
+        let selectedReps = 10;
+        let selectedWeight = 5;
+        
+        function initializeBodyParts() {
+            const container = document.getElementById('body-parts-container');
+            if (!container) return;
+            
+            const parts = ['상체', '복근', '등', '허리', '하체', '관절 주변'];
+            container.innerHTML = '';
+            
+            parts.forEach(part => {
+                const btn = document.createElement('button');
+                btn.className = `body-part-toggle px-4 py-1.5 text-sm font-medium border border-rose-200 rounded-2xl hover:bg-rose-50 transition-all`;
+                btn.textContent = part;
+                btn.onclick = () => toggleBodyPart(btn, part);
+                container.appendChild(btn);
+            });
+            
+            // Set default active
+            setTimeout(() => {
+                const first = container.querySelector('button');
+                if (first) {
+                    first.classList.add('active', 'bg-rose-500', 'text-white', 'border-rose-500');
+                    selectedBodyParts = ['상체'];
+                }
+            }, 50);
+        }
+        
+        function toggleBodyPart(btn, part) {
+            if (selectedBodyParts.includes(part)) {
+                selectedBodyParts = selectedBodyParts.filter(p => p !== part);
+                btn.classList.remove('active', 'bg-rose-500', 'text-white', 'border-rose-500');
+            } else {
+                selectedBodyParts.push(part);
+                btn.classList.add('active', 'bg-rose-500', 'text-white', 'border-rose-500');
+            }
+            updateCalculatedVolume();
+        }
+        
+        function initializeRepsWeightButtons() {
+            // Reps buttons
+            document.querySelectorAll('#reps-buttons .reps-btn').forEach(btn => {
+                btn.onclick = () => {
+                    document.querySelectorAll('#reps-buttons .reps-btn').forEach(b => b.classList.remove('active', 'bg-rose-500', 'text-white', 'border-rose-500'));
+                    btn.classList.add('active', 'bg-rose-500', 'text-white', 'border-rose-500');
+                    selectedReps = parseInt(btn.dataset.reps);
+                    updateCalculatedVolume();
+                };
+            });
+            
+            // Default active
+            const defaultReps = document.querySelector('#reps-buttons .reps-btn[data-reps="10"]');
+            if (defaultReps) defaultReps.classList.add('active', 'bg-rose-500', 'text-white', 'border-rose-500');
+            
+            // Weight buttons
+            document.querySelectorAll('#weight-buttons .weight-btn').forEach(btn => {
+                btn.onclick = () => {
+                    document.querySelectorAll('#weight-buttons .weight-btn').forEach(b => b.classList.remove('active', 'bg-rose-500', 'text-white', 'border-rose-500'));
+                    btn.classList.add('active', 'bg-rose-500', 'text-white', 'border-rose-500');
+                    selectedWeight = parseInt(btn.dataset.weight);
+                    updateCalculatedVolume();
+                };
+            });
+            
+            const defaultWeight = document.querySelector('#weight-buttons .weight-btn[data-weight="5"]');
+            if (defaultWeight) defaultWeight.classList.add('active', 'bg-rose-500', 'text-white', 'border-rose-500');
+            
+            // Custom inputs listener
+            const repsCustom = document.getElementById('reps-custom');
+            const weightCustom = document.getElementById('weight-custom');
+            
+            if (repsCustom) {
+                repsCustom.oninput = () => {
+                    if (repsCustom.value) {
+                        selectedReps = parseInt(repsCustom.value);
+                        document.querySelectorAll('#reps-buttons .reps-btn').forEach(b => b.classList.remove('active', 'bg-rose-500', 'text-white', 'border-rose-500'));
+                        updateCalculatedVolume();
+                    }
+                };
+            }
+            
+            if (weightCustom) {
+                weightCustom.oninput = () => {
+                    if (weightCustom.value) {
+                        selectedWeight = parseFloat(weightCustom.value);
+                        document.querySelectorAll('#weight-buttons .weight-btn').forEach(b => b.classList.remove('active', 'bg-rose-500', 'text-white', 'border-rose-500'));
+                        updateCalculatedVolume();
+                    }
+                };
+            }
+            
+            // Initial calculation
+            setTimeout(updateCalculatedVolume, 100);
+        }
+        
+        function updateCalculatedVolume() {
+            const volumeEl = document.getElementById('calculated-volume');
+            if (!volumeEl) return;
+            
+            const repsInput = document.getElementById('reps-custom');
+            const weightInput = document.getElementById('weight-custom');
+            
+            let reps = selectedReps;
+            let weight = selectedWeight;
+            
+            if (repsInput && repsInput.value) reps = parseInt(repsInput.value) || selectedReps;
+            if (weightInput && weightInput.value) weight = parseFloat(weightInput.value) || selectedWeight;
+            
+            const volume = reps * weight;
+            volumeEl.textContent = volume;
+        }
+        
+        function addStrengthLog() {
+            if (selectedBodyParts.length === 0) {
+                showToast('운동 부위를 최소 1개 이상 선택해주세요.', 'error');
+                return;
+            }
+            
+            const repsInput = document.getElementById('reps-custom');
+            const weightInput = document.getElementById('weight-custom');
+            
+            let reps = selectedReps;
+            let weight = selectedWeight;
+            
+            if (repsInput && repsInput.value) reps = parseInt(repsInput.value);
+            if (weightInput && weightInput.value) weight = parseFloat(weightInput.value);
+            
+            if (!reps || reps <= 0) {
+                showToast('반복 횟수를 입력해주세요.', 'error');
+                return;
+            }
+            if (weight < 0) weight = 0;
+            
+            const volume = reps * weight;
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+            
+            const dayData = getDayData(currentDate);
+            if (!dayData.strength) dayData.strength = [];
+            
+            const newLog = {
+                id: Date.now(),
+                time: timeStr,
+                parts: [...selectedBodyParts],
+                reps: reps,
+                weight: weight,
+                volume: volume
+            };
+            
+            dayData.strength.push(newLog);
+            saveData();
+            
+            updateStrengthUI();
+            updateDashboard();
+            showToast('근력 세트가 기록되었습니다.', 'success');
+            
+            // Reset custom inputs
+            if (repsInput) repsInput.value = '';
+            if (weightInput) weightInput.value = '';
+            
+            refreshAllCharts();
+        }
+        
+        function updateStrengthUI() {
+            const dayData = getDayData(currentDate);
+            const listContainer = document.getElementById('strength-logs-list');
+            const totalVolumeEl = document.getElementById('strength-total-volume');
+            const totalSetsEl = document.getElementById('strength-total-sets');
+            
+            if (!listContainer || !totalVolumeEl || !totalSetsEl) return;
+            
+            listContainer.innerHTML = '';
+            
+            let totalVolume = 0;
+            const logs = dayData.strength || [];
+            
+            if (logs.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <i class="fa-solid fa-dumbbell text-3xl mb-2 opacity-40"></i>
+                        <p class="text-sm">아직 기록된 세트가 없습니다.</p>
+                    </div>
+                `;
+            } else {
+                logs.slice().reverse().forEach((log, index) => {
+                    totalVolume += log.volume;
+                    
+                    const entry = document.createElement('div');
+                    entry.className = `log-entry flex items-center justify-between bg-white border border-rose-100 px-4 py-3 rounded-2xl`;
+                    
+                    const partsBadges = log.parts.map(p => 
+                        `<span class="inline-block text-[10px] px-2 py-0.5 bg-rose-100 text-rose-600 rounded-xl mr-1">${p}</span>`
+                    ).join('');
+                    
+                    entry.innerHTML = `
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-x-2">
+                                <span class="font-mono text-xs text-slate-400 w-12">${log.time}</span>
+                                <div class="flex-1 flex flex-wrap gap-y-0.5">${partsBadges}</div>
+                            </div>
+                            <div class="mt-1 text-sm">
+                                <span class="font-semibold">${log.reps}회 × ${log.weight}kg</span>
+                                <span class="ml-2 text-rose-500 font-bold">${log.volume}kg</span>
+                            </div>
+                        </div>
+                        <button onclick="deleteStrengthLog(${log.id})" class="ml-3 text-rose-300 hover:text-red-500 transition-colors p-1">
+                            <i class="fa-solid fa-trash text-sm"></i>
+                        </button>
+                    `;
+                    listContainer.appendChild(entry);
+                });
+            }
+            
+            totalVolumeEl.textContent = totalVolume;
+            totalSetsEl.textContent = logs.length;
+        }
+        
+        function deleteStrengthLog(id) {
+            const dayData = getDayData(currentDate);
+            if (!dayData.strength) return;
+            
+            if (confirm('이 기록을 삭제하시겠습니까?')) {
+                dayData.strength = dayData.strength.filter(log => log.id !== id);
+                saveData();
+                updateStrengthUI();
+                updateDashboard();
+                showToast('기록이 삭제되었습니다.', 'success');
+                refreshAllCharts();
+            }
+        }
+        
+        function clearStrengthLogs() {
+            if (confirm('오늘의 모든 근력 기록을 삭제하시겠습니까?')) {
+                const dayData = getDayData(currentDate);
+                dayData.strength = [];
+                saveData();
+                updateStrengthUI();
+                updateDashboard();
+                showToast('모든 근력 기록이 삭제되었습니다.', 'success');
+            }
+        }
+        
+        // Time Functions
+        let exerciseTimerInterval = null;
+        let exerciseElapsed = 0;
+        let restTimerInterval = null;
+        let restElapsed = 0;
+        
+        function formatTime(seconds) {
+            const min = Math.floor(seconds / 60);
+            const sec = seconds % 60;
+            return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        }
+        
+        function toggleExerciseTimer() {
+            const btn = document.getElementById('exercise-timer-btn');
+            const text = document.getElementById('exercise-timer-text');
+            const display = document.getElementById('exercise-timer-display');
+            
+            if (exerciseTimerInterval) {
+                // Pause
+                clearInterval(exerciseTimerInterval);
+                exerciseTimerInterval = null;
+                btn.classList.remove('bg-emerald-600');
+                btn.classList.add('bg-emerald-500');
+                text.innerHTML = `<i class="fa-solid fa-play"></i> <span>재개</span>`;
+            } else {
+                // Start
+                exerciseTimerInterval = setInterval(() => {
+                    exerciseElapsed++;
+                    display.textContent = formatTime(exerciseElapsed);
+                }, 1000);
+                btn.classList.remove('bg-emerald-500');
+                btn.classList.add('bg-emerald-600');
+                text.innerHTML = `<i class="fa-solid fa-pause"></i> <span>일시정지</span>`;
+            }
+        }
+        
+        function resetExerciseTimer() {
+            if (exerciseTimerInterval) {
+                clearInterval(exerciseTimerInterval);
+                exerciseTimerInterval = null;
+            }
+            exerciseElapsed = 0;
+            document.getElementById('exercise-timer-display').textContent = '00:00';
+            const btn = document.getElementById('exercise-timer-btn');
+            const text = document.getElementById('exercise-timer-text');
+            btn.classList.remove('bg-emerald-600');
+            btn.classList.add('bg-emerald-500');
+            text.innerHTML = `<i class="fa-solid fa-play"></i> <span>시작</span>`;
+        }
+        
+        function addExerciseTimeFromTimer() {
+            if (exerciseElapsed > 0) {
+                const dayData = getDayData(currentDate);
+                dayData.exercise_min = (dayData.exercise_min || 0) + Math.ceil(exerciseElapsed / 60);
+                saveData();
+                
+                updateTimeUI();
+                updateDashboard();
+                showToast(`${Math.ceil(exerciseElapsed / 60)}분이 운동 시간에 추가되었습니다.`, 'success');
+                resetExerciseTimer();
+                refreshAllCharts();
+            } else {
+                showToast('측정된 시간이 없습니다.', 'error');
+            }
+        }
+        
+        function toggleRestTimer() {
+            const btn = document.getElementById('rest-timer-btn');
+            const text = document.getElementById('rest-timer-text');
+            const display = document.getElementById('rest-timer-display');
+            
+            if (restTimerInterval) {
+                clearInterval(restTimerInterval);
+                restTimerInterval = null;
+                btn.classList.remove('bg-amber-600');
+                btn.classList.add('bg-amber-500');
+                text.innerHTML = `<i class="fa-solid fa-play"></i> <span>재개</span>`;
+            } else {
+                restTimerInterval = setInterval(() => {
+                    restElapsed++;
+                    display.textContent = formatTime(restElapsed);
+                }, 1000);
+                btn.classList.remove('bg-amber-500');
+                btn.classList.add('bg-amber-600');
+                text.innerHTML = `<i class="fa-solid fa-pause"></i> <span>일시정지</span>`;
+            }
+        }
+        
+        function resetRestTimer() {
+            if (restTimerInterval) {
+                clearInterval(restTimerInterval);
+                restTimerInterval = null;
+            }
+            restElapsed = 0;
+            document.getElementById('rest-timer-display').textContent = '00:00';
+            const btn = document.getElementById('rest-timer-btn');
+            const text = document.getElementById('rest-timer-text');
+            btn.classList.remove('bg-amber-600');
+            btn.classList.add('bg-amber-500');
+            text.innerHTML = `<i class="fa-solid fa-play"></i> <span>시작</span>`;
+        }
+        
+        function addRestTimeFromTimer() {
+            if (restElapsed > 0) {
+                const dayData = getDayData(currentDate);
+                dayData.rest_min = (dayData.rest_min || 0) + Math.ceil(restElapsed / 60);
+                saveData();
+                
+                updateTimeUI();
+                updateDashboard();
+                showToast(`${Math.ceil(restElapsed / 60)}분이 휴게 시간에 추가되었습니다.`, 'success');
+                resetRestTimer();
+                refreshAllCharts();
+            } else {
+                showToast('측정된 시간이 없습니다.', 'error');
+            }
+        }
+        
+        function addManualTime(type) {
+            const dayData = getDayData(currentDate);
+            
+            if (type === 'exercise') {
+                const val = parseInt(document.getElementById('manual-exercise-min').value) || 0;
+                if (val > 0) {
+                    dayData.exercise_min = (dayData.exercise_min || 0) + val;
+                    showToast(`${val}분이 운동 시간에 추가되었습니다.`, 'success');
+                }
+            } else {
+                const val = parseInt(document.getElementById('manual-rest-min').value) || 0;
+                if (val > 0) {
+                    dayData.rest_min = (dayData.rest_min || 0) + val;
+                    showToast(`${val}분이 휴게 시간에 추가되었습니다.`, 'success');
+                }
+            }
+            
+            saveData();
+            updateTimeUI();
+            updateDashboard();
+            refreshAllCharts();
+        }
+        
+        function updateTimeUI() {
+            const dayData = getDayData(currentDate);
+            
+            const exEl = document.getElementById('time-total-exercise');
+            const restEl = document.getElementById('time-total-rest');
+            
+            if (exEl) exEl.textContent = `${dayData.exercise_min || 0}분`;
+            if (restEl) restEl.textContent = `${dayData.rest_min || 0}분`;
+            
+            updateTimeChart();
+        }
+        
+        let timeChartInstance = null;
+        
+        function updateTimeChart() {
+            const ctx = document.getElementById('time-chart');
+            if (!ctx) return;
+            
+            const last7Days = getLast7Days();
+            const labels = last7Days.map(d => d.label);
+            const exerciseData = last7Days.map(d => {
+                const day = healthData[d.date] || { exercise_min: 0 };
+                return day.exercise_min || 0;
+            });
+            const restData = last7Days.map(d => {
+                const day = healthData[d.date] || { rest_min: 0 };
+                return day.rest_min || 0;
+            });
+            
+            if (timeChartInstance) timeChartInstance.destroy();
+            
+            timeChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '운동 시간',
+                            data: exerciseData,
+                            backgroundColor: '#10B981',
+                            borderRadius: 4
+                        },
+                        {
+                            label: '휴게 시간',
+                            data: restData,
+                            backgroundColor: '#F59E0B',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } } },
+                    scales: {
+                        y: { beginAtZero: true, stacked: false, grid: { color: '#FECDD3' }, ticks: { color: '#64748b', font: { size: 10 } } },
+                        x: { grid: { color: '#FECDD3' }, ticks: { color: '#64748b', font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+        
+        // History & Charts
+        function getLast7Days() {
+            const days = [];
+            const today = new Date(currentDate);
+            
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toLocaleDateString('sv-SE');
+                const label = d.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' });
+                days.push({ date: dateStr, label: label });
+            }
+            return days;
+        }
+        
+        let historyWaterChart = null;
+        let historyRunningChart = null;
+        let historyStrengthChart = null;
+        let historyTimeChart = null;
+        
+        function updateHistoryCharts() {
+            const last7 = getLast7Days();
+            const labels = last7.map(d => d.label);
+            
+            // Water
+            const waterCtx = document.getElementById('history-water-chart');
+            if (waterCtx) {
+                const waterData = last7.map(d => (healthData[d.date] || {}).water_ml || 0);
+                
+                if (historyWaterChart) historyWaterChart.destroy();
+                historyWaterChart = new Chart(waterCtx, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: '물 (ml)',
+                            data: waterData,
+                            borderColor: '#E11D48',
+                            backgroundColor: 'rgba(225,29,72,0.15)',
+                            tension: 0.3,
+                            borderWidth: 2.5,
+                            fill: true
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                });
+            }
+            
+            // Running
+            const runCtx = document.getElementById('history-running-chart');
+            if (runCtx) {
+                const runData = last7.map(d => ((healthData[d.date] || {}).running_m || 0) / 1000);
+                
+                if (historyRunningChart) historyRunningChart.destroy();
+                historyRunningChart = new Chart(runCtx, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: '러닝 (km)',
+                            data: runData,
+                            backgroundColor: '#FB7185',
+                            borderRadius: 5
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                });
+            }
+            
+            // Strength Volume
+            const strCtx = document.getElementById('history-strength-chart');
+            if (strCtx) {
+                const strData = last7.map(d => {
+                    const day = healthData[d.date] || { strength: [] };
+                    return (day.strength || []).reduce((sum, log) => sum + (log.volume || 0), 0);
+                });
+                
+                if (historyStrengthChart) historyStrengthChart.destroy();
+                historyStrengthChart = new Chart(strCtx, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: '볼륨 (kg)',
+                            data: strData,
+                            backgroundColor: '#BE123C',
+                            borderRadius: 5
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                });
+            }
+            
+            // Time stacked
+            const timeCtx = document.getElementById('history-time-chart');
+            if (timeCtx) {
+                const exData = last7.map(d => (healthData[d.date] || {}).exercise_min || 0);
+                const restData = last7.map(d => (healthData[d.date] || {}).rest_min || 0);
+                
+                if (historyTimeChart) historyTimeChart.destroy();
+                historyTimeChart = new Chart(timeCtx, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [
+                            { label: '운동', data: exData, backgroundColor: '#059669', borderRadius: 4 },
+                            { label: '휴게', data: restData, backgroundColor: '#D97706', borderRadius: 4 }
+                        ]
+                    },
+                    options: { 
+                        responsive: true, maintainAspectRatio: false, 
+                        plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } },
+                        scales: { y: { beginAtZero: true, stacked: true } }
+                    }
+                });
+            }
+            
+            // Summary numbers
+            updateHistorySummary(last7);
+        }
+        
+        function updateHistorySummary(last7Days) {
+            let totalWater = 0, totalRun = 0, totalVol = 0, totalEx = 0;
+            let count = 0;
+            
+            last7Days.forEach(d => {
+                const day = healthData[d.date];
+                if (day) {
+                    totalWater += day.water_ml || 0;
+                    totalRun += day.running_m || 0;
+                    totalEx += day.exercise_min || 0;
+                    
+                    if (day.strength) {
+                        day.strength.forEach(l => totalVol += l.volume || 0);
+                    }
+                    count++;
+                }
+            });
+            
+            const avgWaterEl = document.getElementById('avg-water');
+            if (avgWaterEl) avgWaterEl.textContent = count > 0 ? (totalWater / count / 1000).toFixed(1) : '0';
+            
+            const totalRunEl = document.getElementById('total-running');
+            if (totalRunEl) totalRunEl.textContent = (totalRun / 1000).toFixed(1);
+            
+            const totalVolEl = document.getElementById('total-strength-volume');
+            if (totalVolEl) totalVolEl.textContent = totalVol.toLocaleString();
+            
+            const totalExEl = document.getElementById('total-exercise-time');
+            if (totalExEl) totalExEl.textContent = totalEx;
+        }
+        
+        function refreshAllCharts() {
+            updateWaterChart();
+            updateRunningChart();
+            updateTimeChart();
+            updateHistoryCharts();
+        }
+        
+        // Tab Switching
+        function switchTab(tab) {
+            // Hide all
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.remove('active'));
+            
+            // Show selected
+            const content = document.getElementById(`content-${tab}`);
+            const tabBtn = document.getElementById(`tab-${tab}`);
+            
+            if (content) content.classList.add('active');
+            if (tabBtn) tabBtn.classList.add('active');
+            
+            // Refresh specific UI
+            if (tab === 'water') {
+                updateWaterUI();
+            } else if (tab === 'running') {
+                updateRunningUI();
+            } else if (tab === 'strength') {
+                updateStrengthUI();
+            } else if (tab === 'time') {
+                updateTimeUI();
+            } else if (tab === 'history') {
+                updateHistoryCharts();
+            } else if (tab === 'dashboard') {
+                updateDashboard();
+            }
+        }
+        
+        // Toast
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bg = type === 'success' ? 'bg-emerald-500' : 'bg-red-500';
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            
+            toast.className = `toast flex items-center gap-x-3 ${bg} text-white px-5 py-3 rounded-2xl shadow-xl mb-2 min-w-[260px]`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icon} text-lg"></i>
+                <span class="font-medium">${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transition = 'all 0.3s ease';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 2800);
+        }
+        
+        // Settings
+        function openSettingsModal() {
+            const modal = document.getElementById('settings-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Load current goals
+            document.getElementById('goal-water').value = localStorage.getItem('goal_water') || '2000';
+            document.getElementById('goal-running').value = localStorage.getItem('goal_running') || '5';
+        }
+        
+        function closeSettingsModal() {
+            const modal = document.getElementById('settings-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+        
+        function saveSettings() {
+            const waterGoal = document.getElementById('goal-water').value;
+            const runGoal = document.getElementById('goal-running').value;
+            
+            localStorage.setItem('goal_water', waterGoal);
+            localStorage.setItem('goal_running', runGoal);
+            
+            updateDashboard();
+            updateWaterUI();
+            showToast('설정이 저장되었습니다.', 'success');
+        }
+        
+        function exportData() {
+            const dataStr = JSON.stringify(healthData, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `hearttrack_backup_${currentDate}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showToast('데이터가 내보내기되었습니다.', 'success');
+        }
+        
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json,application/json';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    try {
+                        const importedData = JSON.parse(ev.target.result);
+                        
+                        // Basic validation
+                        if (typeof importedData !== 'object' || importedData === null) {
+                            throw new Error('유효하지 않은 JSON 형식입니다.');
+                        }
+                        
+                        // Overwrite healthData
+                        healthData = importedData;
+                        localStorage.setItem('hearttrack_data', JSON.stringify(healthData));
+                        
+                        showToast('데이터를 성공적으로 불러왔습니다. 앱을 새로고침합니다.', 'success');
+                        
+                        setTimeout(() => {
+                            location.reload();
+                        }, 800);
+                        
+                    } catch (err) {
+                        showToast('파일을 불러오는 데 실패했습니다: ' + err.message, 'error');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        function clearAllData() {
+            if (!confirm('모든 기록과 설정(목표치 포함)을 영구적으로 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+                return;
+            }
+            
+            // Clear main tracking data
+            localStorage.removeItem('hearttrack_data');
+            
+            // Clear goal settings as well
+            localStorage.removeItem('goal_water');
+            localStorage.removeItem('goal_running');
+            
+            // Reset in-memory data to completely empty state for today
+            healthData = {};
+            const today = getToday();
+            healthData[today] = {
+                water_ml: 0,
+                running_m: 0,
+                strength: [],
+                exercise_min: 0,
+                rest_min: 0
+            };
+            
+            saveData();
+            
+            showToast('모든 데이터가 삭제되었습니다.', 'success');
+            
+            // Reload after short delay so toast is visible
+            setTimeout(() => {
+                location.reload();
+            }, 600);
+        }
+        
+        function resetDailyData(type) {
+            if (!confirm('오늘의 해당 데이터를 초기화하시겠습니까?')) return;
+            
+            const dayData = getDayData(currentDate);
+            
+            if (type === 'water') dayData.water_ml = 0;
+            else if (type === 'running') dayData.running_m = 0;
+            else if (type === 'strength') dayData.strength = [];
+            
+            saveData();
+            
+            if (type === 'water') updateWaterUI();
+            else if (type === 'running') updateRunningUI();
+            else if (type === 'strength') updateStrengthUI();
+            
+            updateDashboard();
+            showToast('오늘 데이터가 초기화되었습니다.', 'success');
+            refreshAllCharts();
+        }
+        
+        // Utility: Update current date display
+        function updateCurrentDate() {
+            const dateEl = document.getElementById('current-date');
+            if (!dateEl) return;
+            
+            const today = new Date();
+            const options = { month: 'long', day: 'numeric', weekday: 'short' };
+            dateEl.textContent = today.toLocaleDateString('ko-KR', options);
+        }
+        
+        // Initialize everything
+        function initializeApp() {
+            initializeTailwind();
+            loadData();
+            updateCurrentDate();
+            
+            // Set default goals if not set
+            if (!localStorage.getItem('goal_water')) localStorage.setItem('goal_water', '2000');
+            if (!localStorage.getItem('goal_running')) localStorage.setItem('goal_running', '5');
+            
+            // Initialize body parts and buttons
+            initializeBodyParts();
+            initializeRepsWeightButtons();
+            
+            // Initial UI updates
+            updateDashboard();
+            updateWaterUI();
+            updateRunningUI();
+            updateStrengthUI();
+            updateTimeUI();
+            
+            // Initial charts
+            setTimeout(() => {
+                updateWaterChart();
+                updateRunningChart();
+                updateTimeChart();
+                updateHistoryCharts();
+            }, 300);
+            
+            // Keyboard support for quick add (demo)
+            document.addEventListener('keydown', function(e) {
+                if (e.key === '/' && document.activeElement.tagName === 'BODY') {
+                    e.preventDefault();
+                    const waterTab = document.getElementById('tab-water');
+                    if (waterTab) waterTab.click();
+                }
+            });
+            
+            // Welcome toast on first load (only once per session)
+            if (!sessionStorage.getItem('hearttrack_welcomed')) {
+                setTimeout(() => {
+                    showToast('하트트랙에 오신 것을 환영합니다! 데이터를 자유롭게 기록해보세요.', 'success');
+                    sessionStorage.setItem('hearttrack_welcomed', 'true');
+                }, 1200);
+            }
+            
+            // Make sure dashboard is active on start
+            document.getElementById('content-dashboard').classList.add('active');
+            document.getElementById('tab-dashboard').classList.add('active');
+            
+            console.log('%c[HeartTrack] Health tracking app initialized successfully.', 'color:#E11D48');
+        }
+        
+        // Boot app
+        window.onload = initializeApp;
+        
+        // Expose some functions for debugging (optional)
+        window.HeartTrack = { resetData: () => { localStorage.clear(); location.reload(); } };
+    </script>
+</body>
+</html>
